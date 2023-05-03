@@ -5,13 +5,6 @@ from datetime import datetime
 
 Base = declarative_base()
 
-association_table = Table(
-    "players_tournaments",
-    Base.metadata,
-    Column("players_id", ForeignKey("players.id"), primary_key=True),
-    Column("tournaments_table_id", ForeignKey("tournaments_table.id"), primary_key=True),
-)
-
 class Player(Base):
     __tablename__ = 'players'
     id = Column(Integer, primary_key=True)
@@ -20,35 +13,27 @@ class Player(Base):
     school = school = Column(Enum('HEIA-FR', 'UNI-FR', 'Autre'))
     elo = Column(Integer, default=0)
     #matchs = relationship('Match', backref='players', foreign_keys="[Match.whitePlayer_id, Match.blackPlayer_id]")
-    #tournaments = relationship('Player', secondary='players_tournament', backref='tournaments_of_player')
-
-    tournaments = relationship("Tournament", secondary=association_table, back_populates="players")
+    tournaments = relationship('Player', secondary='players_tournament', backref='tournaments_of_player')
 
 class Tournament(Base):
-    __tablename__ = 'tournaments_table'
+    __tablename__ = 'tournaments'
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
     date = Column(DateTime, nullable=False)
-    #idForPlayers = relationship("Tournament", secondary='players_tournament', backref='tournament_of_players')
+    idForPlayers = relationship("Tournament", secondary='players_tournament', backref='tournament_of_players')
     #matchs = relationship("Match", secondary='matchs_tournament', backref='tournament_of_matchs')
 
-    matchs = relationship("Match", back_populates="tournament")
-    players = relationship("Player", secondary=association_table, back_populates="tournaments")
-
-class Match(Base):
-    __tablename__ = 'matchs_table'
+"""class Match(Base):
+    __tablename__ = 'matchs'
     id = Column(Integer, primary_key=True)
-    #whitePlayer_id = Column(Integer, ForeignKey('players.id'), nullable=False)
-    #blackPlayer_id = Column(Integer, ForeignKey('players.id'), nullable=False)
-    #tournament = relationship("Tournament", secondary='matchs_tournament', backref='matchs_of_tournament')
+    whitePlayer_id = Column(Integer, ForeignKey('players.id'), nullable=False)
+    blackPlayer_id = Column(Integer, ForeignKey('players.id'), nullable=False)
+    tournament = relationship("Tournament", secondary='matchs_tournament', backref='matchs_of_tournament')"""
 
-    tournament_id = Column(Integer, ForeignKey('tournaments_table.id'))
-    tournament = relationship("Tournament", back_populates="matchs")
-
-"""class PlayersTournaments(Base):
+class PlayersTournaments(Base):
     __tablename__ = 'players_tournament'
     player_id = Column('player_id', Integer, ForeignKey('players.id'), primary_key=True)
-    tournament_id = Column('tournament_id', Integer, ForeignKey('tournaments.id'), primary_key=False)"""
+    tournament_id = Column('tournament_id', Integer, ForeignKey('tournaments.id'), primary_key=False)
 
 """class MatchsTournaments(Base):
     __tablename__ = 'matchs_tournament'
