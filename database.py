@@ -1,59 +1,53 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, create_engine, select, exists, Enum, ForeignKey, Table
-from sqlalchemy.orm import Session, declarative_base, relationship, sessionmaker
+from sqlalchemy.orm import Session, declarative_base, relationship, sessionmaker, object_session
 from datetime import datetime
 
 
 Base = declarative_base()
 
-association_table = Table(
-    "players_tournaments",
-    Base.metadata,
-    Column("players_id", ForeignKey("players.id"), primary_key=True),
-    Column("tournaments_table_id", ForeignKey("tournaments_table.id"), primary_key=True),
-)
+
+class PlayersTournaments(Base):
+    __tablename__ = "players_tournaments_table"
+    player_id = Column(ForeignKey("players_table.id"), primary_key=True)
+    tournament_id = Column(ForeignKey("tournaments_table.id"), primary_key=True)
+    # association between Assocation -> Child
+    players_ass = relationship("Player", back_populates="tournaments_associations")
+    # association between Assocation -> Parent
+    tournaments_ass = relationship("Tournament", back_populates="players_associations")
+    #extra_data:
+    score = Column(Integer, default=0)
 
 class Player(Base):
-    __tablename__ = 'players'
-    id = Column(Integer, primary_key=True)
+    __tablename__ = 'players_table'
+    id = Column(Integer, nullable=False, primary_key=True)
     firstName = Column(String, nullable=False)
     lastName = Column(String, nullable=False)
     school = school = Column(Enum('HEIA-FR', 'UNI-FR', 'Autre'))
     elo = Column(Integer, default=0)
-    #matchs = relationship('Match', backref='players', foreign_keys="[Match.whitePlayer_id, Match.blackPlayer_id]")
-    #tournaments = relationship('Player', secondary='players_tournament', backref='tournaments_of_player')
-
-    tournaments = relationship("Tournament", secondary=association_table, back_populates="players")
+    tournaments = relationship("Tournament", secondary="players_tournaments_table", back_populates="players", viewonly=True)
+    tournaments_associations = relationship("PlayersTournaments", back_populates="players_ass")
+    matches = relationship("Match", primaryjoin="or_(Player.id == Match.white_player_id, Player.id == Match.black_player_id)", viewonly=True)
 
 class Tournament(Base):
     __tablename__ = 'tournaments_table'
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer,nullable=False, primary_key=True)
     name = Column(String, nullable=False)
     date = Column(DateTime, nullable=False)
-    #idForPlayers = relationship("Tournament", secondary='players_tournament', backref='tournament_of_players')
-    #matchs = relationship("Match", secondary='matchs_tournament', backref='tournament_of_matchs')
-
     matchs = relationship("Match", back_populates="tournament")
-    players = relationship("Player", secondary=association_table, back_populates="tournaments")
+    players = relationship("Player", secondary="players_tournaments_table", back_populates="tournaments", overlaps="players_ass,tournaments_associations,tournaments_ass")
+    players_associations = relationship("PlayersTournaments", back_populates="tournaments_ass", overlaps="players")
 
 class Match(Base):
     __tablename__ = 'matchs_table'
     id = Column(Integer, primary_key=True)
-    #whitePlayer_id = Column(Integer, ForeignKey('players.id'), nullable=False)
-    #blackPlayer_id = Column(Integer, ForeignKey('players.id'), nullable=False)
-    #tournament = relationship("Tournament", secondary='matchs_tournament', backref='matchs_of_tournament')
-
-    tournament_id = Column(Integer, ForeignKey('tournaments_table.id'))
+    white_player_id = Column(Integer, ForeignKey('players_table.id'), nullable=False)
+    black_player_id = Column(Integer, ForeignKey('players_table.id'), nullable=False)
+    tournament_id = Column(Integer, ForeignKey('tournaments_table.id'), nullable=False)
     tournament = relationship("Tournament", back_populates="matchs")
-
-"""class PlayersTournaments(Base):
-    __tablename__ = 'players_tournament'
-    player_id = Column('player_id', Integer, ForeignKey('players.id'), primary_key=True)
-    tournament_id = Column('tournament_id', Integer, ForeignKey('tournaments.id'), primary_key=False)"""
-
-"""class MatchsTournaments(Base):
-    __tablename__ = 'matchs_tournament'
-    match_id = Column('match_id', Integer, ForeignKey('matchs_of_tournament.id'), primary_key=True)
-    tournament_id = Column('tournament_id', Integer, ForeignKey('tournament_of_matchs.id'), primary_key=True)"""
+    winner_id = Column(Integer, ForeignKey('players_table.id'))
+    winner = relationship("Player", foreign_keys=[winner_id])
+    white_player = relationship("Player", foreign_keys=[white_player_id])
+    black_player = relationship("Player", foreign_keys=[black_player_id])
 
 
 class Database():
@@ -67,14 +61,33 @@ class Database():
         Base.metadata.create_all(self.engine)
         
     def AddData(self, data):
-        session = self.Session()
-        session.add(data)
-        session.commit()
+        with self.Session() as session:
+            session.add(data)
+            session.commit()
+            id = data.id
+        return id
 
     def AddDataList(self, dataList: list):
-        session = self.Session()
-        session.add_all(dataList)
-        session.commit()
+        with self.Session() as session:
+            session.add_all(dataList)
+            session.commit()
+
+    def AddPlayerID2ToTournament(self, tournament_id, player_id):
+        with self.Session() as session:
+            tournament = session.query(Tournament).get(tournament_id)
+            if not(tournament):
+                tournament = Tournament("error", tournament_id)
+                session.add(tournament)
+            player = self.ReadPlayer_byID(player_id)
+            tournament.players.append(player)
+            session.commit()
+
+    def AddPlayerIDToTournament(self, tournament_id, player_id):
+        with self.Session() as session:
+            tournament = session.query(Tournament).get(tournament_id)
+            player = session.query(Player).get(player_id)
+            tournament.players.append(player)
+            session.commit()
 
     def ReadAllData(self, column):
         session = self.Session()
@@ -84,6 +97,7 @@ class Database():
     def ReadData_bySelection(self, selection):
         session = self.Session()
         data = session.scalars(selection).one()
+        session.close()
         return data
 
     def ReadDataList_bySelection(self, selection):
@@ -93,14 +107,36 @@ class Database():
             dataList.append(data)
         return dataList
 
-    def ReadBalance_byDate(self, date: datetime):
-        return Database.ReadData_bySelection(select(self.Balance).where(self.Balance.date == date))
+    def ReadTournament_byDate(self, date: datetime):
+        return self.ReadData_bySelection(select(self.Balance).where(self.Balance.date == date))
 
-    def ReadTrade_byID(self, id: int):
-        return Database.ReadData_bySelection(select(self.Trade).where(self.Trade.id == id))
+    def ReadTournament_byID(self, id: int):
+        return self.ReadData_bySelection(select(Tournament).where(Tournament.id == id))
 
-    def ReadTrade_byIDs(self, ids: list[int]):
-        return Database.ReadDataList_bySelection(select(self.Trade).where(self.Trade.id.in_(ids)))
+    def ReadTournamentPlayers_byID(self, id: int):
+        return self.ReadData_bySelection(select(Player).where(Player.tournaments_associations == id))
+    
+    def GetAllPlayers(self):
+        with self.Session() as session:
+            return session.query(Player).all()
+    
+    def GetPlayersByTournamentID(self, tournament_id):
+        with self.Session() as session:
+            tournament = session.query(Tournament).filter_by(id=tournament_id).first()
+            if tournament:
+                return tournament.players
+            else:
+                return []
+    
+    def UpdateScoreFromPlayerTournament(self, tournament_id, player_id, score):
+        with self.Session() as session:   
+            player_tournament = session.query(PlayersTournaments).filter_by(player_id=player_id, tournament_id=tournament_id).first()
+            player_tournament.score = score
+            session.commit()
+
+    
+    def ReadPlayer_byID(self, id: int):
+        return self.ReadData_bySelection(select(Player).where(Player.id == id))
     
     def TestIfTradeExist(self, id: int):
         session = self.Session()
@@ -112,24 +148,6 @@ class Database():
         trade = session.query(Player).filter_by(firstName=firstName).first()
         trade.elo = elo
         session.commit()
-
-    """def readData_relationship(self):
-        with Session(self.engine) as session:
-
-            stmt = (
-                select(Address)
-                .join(Address.user)
-                .where(User.name == "sandy")
-                .where(Address.email_address == "sandy@sqlalchemy.org")
-            )
-            sandy_address = session.scalars(stmt).one()"""
-
-    """def changeData(self, selection):
-        with Session(self.engine) as session:
-            patrick = session.scalars(stmt).one()
-            patrick.addresses.append(Address(email_address="patrickstar@sqlalchemy.org"))
-            sandy_address.email_address = "sandy_cheeks@sqlalchemy.org"
-            session.commit()"""
 
 if __name__ == "__main__":
     db=Database()

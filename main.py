@@ -1,4 +1,4 @@
-from database import Database, Player, Tournament
+from database import Database, Player, Tournament, PlayersTournaments, Match
 from datetime import datetime
 import tkinter as tk
 
@@ -52,8 +52,27 @@ score_entry = tk.Entry(root)
 score_entry.pack()
 
 def startTournament():
-    #db.AddData(Tournament())
-    pass
+    root2 = tk.Toplevel(root)
+    labelNameTournament = tk.Label(root2, text="Nom du tournoi:")
+    labelNameTournament.pack()
+
+    entryNameTournament = tk.Entry(root2)
+    entryNameTournament.bind('<Return>', lambda event: startTournament2())
+    entryNameTournament.pack()
+
+    def startTournament2():
+        nameTournament = entryNameTournament.get()
+        entryNameTournament.destroy()
+        labelNameTournament.destroy()
+
+        tournament = Tournament(name=nameTournament, date=datetime.now())
+        tournamentID = db.AddData(data=tournament)
+        players = db.GetAllPlayers()
+        for player in players:
+            db.AddPlayerIDToTournament(tournament_id=tournamentID, player_id=player.id)
+        
+        playersTournament = 
+        db.AddData(Match(tournament_id=tournamentID, white_player_id=, black_player_id=))
 
 updateScoreButton = tk.Button(root, text="Mettre à jour le score", command=updateScore)
 updateScoreButton.pack()
