@@ -1,6 +1,8 @@
 from database import Database, Player, Tournament, PlayersTournaments, Match
 from datetime import datetime
 import tkinter as tk
+import random
+import math
 
 db = Database()
 
@@ -71,8 +73,31 @@ def startTournament():
         for player in players:
             db.AddPlayerIDToTournament(tournament_id=tournamentID, player_id=player.id)
         
-        playersTournament = 
-        db.AddData(Match(tournament_id=tournamentID, white_player_id=, black_player_id=))
+        playersTournament = db.GetPlayersByTournamentID(tournamentID)
+        n = 1
+        string = ""
+        for player in playersTournament:
+            string += str(n) + ") " + player.firstName + player.lastName + '\n'
+            n += 1
+        labelPlayersTournament = tk.Label(root2, text=string)
+        labelPlayersTournament.pack()
+
+        string = ""
+        playersTournamentsMatch = playersTournament
+        for i in range(0, math.floor(len(playersTournament)/2)):
+            whitePlayer_int = random.randrange(0,len(playersTournamentsMatch)-1)
+            blackPlayer_int = random.randrange(0,len(playersTournamentsMatch)-1)
+            whitePlayer = playersTournamentsMatch[whitePlayer_int]
+            blackPlayer = playersTournamentsMatch[blackPlayer_int]
+            db.AddData(Match(tournament_id=tournamentID, white_player_id=whitePlayer.id, black_player_id=blackPlayer.id))
+            playersTournamentsMatch.pop(whitePlayer_int)
+            playersTournamentsMatch.pop(blackPlayer_int)
+        playerSolo = None
+        if len(playersTournamentsMatch != 0):
+            playerSolo = playersTournamentsMatch[0]
+
+        labelPlayersFirstMatch = tk.Label(root2, text=string)
+        
 
 updateScoreButton = tk.Button(root, text="Mettre à jour le score", command=updateScore)
 updateScoreButton.pack()
