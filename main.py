@@ -69,7 +69,7 @@ def startTournament():
 
         tournament = Tournament(name=nameTournament, date=datetime.now())
         tournamentID = db.AddData(data=tournament)
-        players = db.GetAllPlayers()
+        players = db.GetAll(Player)
         for player in players:
             db.AddPlayerIDToTournament(tournament_id=tournamentID, player_id=player.id)
         
@@ -77,25 +77,35 @@ def startTournament():
         n = 1
         string = ""
         for player in playersTournament:
-            string += str(n) + ") " + player.firstName + player.lastName + '\n'
+            string += str(n) + ") " + player.firstName + " " + player.lastName + '\n'
             n += 1
         labelPlayersTournament = tk.Label(root2, text=string)
         labelPlayersTournament.pack()
 
         string = ""
-        playersTournamentsMatch = playersTournament
-        for i in range(0, math.floor(len(playersTournament)/2)):
-            whitePlayer_int = random.randrange(0,len(playersTournamentsMatch)-1)
-            blackPlayer_int = random.randrange(0,len(playersTournamentsMatch)-1)
-            whitePlayer = playersTournamentsMatch[whitePlayer_int]
-            blackPlayer = playersTournamentsMatch[blackPlayer_int]
-            db.AddData(Match(tournament_id=tournamentID, white_player_id=whitePlayer.id, black_player_id=blackPlayer.id))
-            playersTournamentsMatch.pop(whitePlayer_int)
-            playersTournamentsMatch.pop(blackPlayer_int)
-        playerSolo = None
-        if len(playersTournamentsMatch != 0):
-            playerSolo = playersTournamentsMatch[0]
+        playersTournamentsMatchID = []
+        for player in playersTournament:
+            playersTournamentsMatchID.append(player.id)
 
+        for i in range(0, math.floor(len(playersTournamentsMatchID)/2)):
+            whitePlayer_id = playersTournamentsMatchID[random.randrange(0,len(playersTournamentsMatchID)-1)]
+            playersTournamentsMatchID.remove(whitePlayer_id)
+            blackPlayer_id = playersTournamentsMatchID[random.randrange(0,len(playersTournamentsMatchID)-1)]
+            playersTournamentsMatchID.remove(blackPlayer_id)
+            whitePlayer = db.GetPlayersByID(whitePlayer_id)
+            blackPlayer = db.GetPlayersByID(blackPlayer_id)
+            db.AddData(Match(tournament_id=tournamentID, white_player_id=whitePlayer_id, black_player_id=blackPlayer_id))
+        playerSolo = None
+        if len(playersTournamentsMatchID) != 0:
+            playerSolo = playersTournamentsMatchID[0]
+
+        string = ""
+        n = 1
+        matchs = db.GetMatchsByTournamentID(tournamentID)
+        for match in matchs:
+            string += str(n) + ") "+ match.white_player.firstName + " " + player.white_player.lastName + " vs " + match.black_player.firstName + " " + player.black_player.lastName 
+            n += 1
+        string += str(n) + ") "+ db.GetPlayersByID(playerSolo).firstName + " " + db.GetPlayersByID(playerSolo).lastName
         labelPlayersFirstMatch = tk.Label(root2, text=string)
         
 

@@ -116,9 +116,17 @@ class Database():
     def ReadTournamentPlayers_byID(self, id: int):
         return self.ReadData_bySelection(select(Player).where(Player.tournaments_associations == id))
     
-    def GetAllPlayers(self):
+    def GetAll(self, column: Column):
         with self.Session() as session:
-            return session.query(Player).all()
+            return session.query(column).all()
+        
+    def GetMatchsByTournamentID(self, tournament_id):
+        with self.Session() as session:
+            tournament = session.query(Tournament).filter_by(id=tournament_id).first()
+            if tournament:
+                return tournament.matchs
+            else:
+                return []
     
     def GetPlayersByTournamentID(self, tournament_id):
         with self.Session() as session:
@@ -127,6 +135,11 @@ class Database():
                 return tournament.players
             else:
                 return []
+            
+    def GetPlayersByID(self, id):
+        with self.Session() as session:
+            player = session.query(Player).filter_by(id=id).first()
+            return player
     
     def UpdateScoreFromPlayerTournament(self, tournament_id, player_id, score):
         with self.Session() as session:   
