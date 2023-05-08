@@ -44,11 +44,11 @@ class Match(Base):
     black_player_id = Column(Integer, ForeignKey('players_table.id'), nullable=False)
     tournament_id = Column(Integer, ForeignKey('tournaments_table.id'), nullable=False)
     tournament = relationship("Tournament", back_populates="matchs")
-    winner_id = Column(Integer, ForeignKey('players_table.id'))
+    winner_id = Column(Integer, ForeignKey('players_table.id'), nullable=True)
     winner = relationship("Player", foreign_keys=[winner_id])
-    white_player = relationship("Player", foreign_keys=[white_player_id])
-    black_player = relationship("Player", foreign_keys=[black_player_id])
-
+    white_player = relationship("Player", foreign_keys=[white_player_id])   #?
+    black_player = relationship("Player", foreign_keys=[black_player_id])   #?
+    round = Column(Integer, nullable=False)
 
 class Database():
         
@@ -89,16 +89,24 @@ class Database():
             tournament.players.append(player)
             session.commit()
 
+    def  AddWinnerToMatch(self, match_id, winner_id):
+        with self.Session() as session:
+            match = session.query(Match).get(match_id)
+            match.winner_id = winner_id
+            session.commit()
+
     def ReadAllData(self, column):
         session = self.Session()
         data = session.query(column).all()
         return data
 
     def ReadData_bySelection(self, selection):
-        session = self.Session()
-        data = session.scalars(selection).one()
-        session.close()
-        return data
+        with Session(self.engine) as session:
+            data = session.scalars(selection)
+            try:
+                return data.one()
+            except:
+                return None
 
     def ReadDataList_bySelection(self, selection):
         session = self.Session()
@@ -127,6 +135,14 @@ class Database():
                 return tournament.matchs
             else:
                 return []
+            
+    def GetMatchsByRound(self, tournament_id, round):
+        with self.Session() as session:
+            matchs = session.query(Match).filter_by(tournament_id=tournament_id, round=round).all()
+            if matchs:
+                return matchs
+            else:
+                return []
     
     def GetPlayersByTournamentID(self, tournament_id):
         with self.Session() as session:
@@ -136,15 +152,33 @@ class Database():
             else:
                 return []
             
-    def GetPlayersByID(self, id):
+    def GetPlayersTournamentsByTournamentID(self, tournament_id):
+        with self.Session() as session:
+            players_tournament = session.query(PlayersTournaments).filter_by(tournament_id=tournament_id).all()
+            if players_tournament:
+                return players_tournament
+            else:
+                return []
+            
+    def GetPlayerByID(self, id):
         with self.Session() as session:
             player = session.query(Player).filter_by(id=id).first()
             return player
+        
+    def GetMatchByID(self, id):
+        return self.ReadData_bySelection(select(Match).where(Match.id == id))
     
     def UpdateScoreFromPlayerTournament(self, tournament_id, player_id, score):
         with self.Session() as session:   
             player_tournament = session.query(PlayersTournaments).filter_by(player_id=player_id, tournament_id=tournament_id).first()
             player_tournament.score = score
+            session.commit()
+
+    def UpgradeScoreFromPlayerTournament(self, tournament_id, player_id, increment):
+        with self.Session() as session:
+            player_tournament = session.query(PlayersTournaments).filter_by(player_id=player_id, tournament_id=tournament_id).first()
+            score = player_tournament.score
+            player_tournament.score = score + increment
             session.commit()
 
     
