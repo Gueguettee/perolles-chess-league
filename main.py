@@ -1,11 +1,19 @@
-from database import Database, Player, Tournament, PlayersTournaments, Match
-from datetime import datetime
-import tkinter as tk
-from tkinter import ttk
 import random
-import math
+import tkinter as tk
+from datetime import datetime
+from tkinter import ttk
+from telegramAPI import Telegram
+
+from database import Database, Match, Player, PlayersTournaments, Tournament
 
 N_ROUNDS = 3
+TOKEN_TOURNAMENT_TELEGRAM = '6189666655:AAGyjZ7dkgqQtobYR3j3AHlIYPwNdeDusR8'
+CHAT_ID_TELEGRAM = '1646128337'
+
+te = Telegram(
+    token = TOKEN_TOURNAMENT_TELEGRAM,
+    chat_id = CHAT_ID_TELEGRAM
+    )
 
 db = Database()
 
@@ -100,9 +108,9 @@ def startTournament():
                 root2.destroy()
                 root2 = tk.Toplevel(root)
                 if round <= n_rounds:
-                    string1 = "Actual classement :\n\n"
+                    string1 = "Current ranking :\n\n"
                 else:
-                    string1 = "Final classement :\n\n"
+                    string1 = "Final ranking :\n\n"
 
             playersTournament = db.GetPlayersTournamentsByTournamentID(tournamentID)
             n = 1
@@ -125,9 +133,16 @@ def startTournament():
                 for i in range(0, len(table_classement)):
                     player = db.GetPlayerByID(table_classement[i][0])
                     playersTournamentsMatchID.append(player.id)
-                    string1 += f"{n}) {player.firstName} {player.lastName} : {table_classement[i][1]}\n"
+                    n_sous = 0
+                    if i != 0:
+                        ok = False
+                        for i2 in range(0, i):
+                            if table_classement[i][1] == table_classement[i-i2-1][1]:
+                                n_sous += 1
+                            else:
+                                break
+                    string1 += f"{n-n_sous}) {player.firstName} {player.lastName} : {table_classement[i][1]}\n"
                     n += 1
-
             else:
                 for playerTournament in playersTournament:
                     table_classement[i] = [playerTournament.player_id, db.GetPlayerByID(playerTournament.player_id).elo]
@@ -147,6 +162,8 @@ def startTournament():
                     string1 += f"{n}) {player.firstName} {player.lastName} : {0}\n"
                     n += 1
 
+            te.PostMessage(string1)
+
             labelPlayersTournament = tk.Label(root2, text=string1, justify="left")
             labelPlayersTournament.pack(side="left", padx=(10,50),  anchor="nw")
 
@@ -157,18 +174,45 @@ def startTournament():
             if len(playersTournamentsMatchID)%2 != 0:
                 playerSolo_id = playersTournamentsMatchID[random.randrange(0,len(playersTournamentsMatchID))]
                 playersTournamentsMatchID.remove(playerSolo_id) #sauf si déjà en pause  ##################################3
-            print(len(playersTournamentsMatchID))
 
+            matchsTournament = db.GetMatchsByTournamentID(tournamentID)
             for i in range(0, int(len(playersTournamentsMatchID)/2)):
                 whitePlayer_id = playersTournamentsMatchID[0]
-                playersTournamentsMatchID.remove(whitePlayer_id)    #sauf si déjà joué contre ###################################
-                blackPlayer_id = playersTournamentsMatchID[0]
-                playersTournamentsMatchID.remove(blackPlayer_id)
+                playersTournamentsMatchID.remove(whitePlayer_id)
+                print("w"+str(whitePlayer_id))
+                ok = False
+                for i in range(0, len(playersTournamentsMatchID)):
+                    blackPlayer_id = playersTournamentsMatchID[i]
+                    print("b" + str(blackPlayer_id))
+                    ok = True
+                    for match in matchsTournament:
+                        if((match.white_player_id == whitePlayer_id and match.black_player_id == blackPlayer_id) 
+                           or (match.white_player_id == blackPlayer_id and match.black_player_id == whitePlayer_id)):
+                           ok = False
+                           break
+                    if ok:
+                        break
+                print(ok)
+                if not ok:
+                    blackPlayer_id = playersTournamentsMatchID[0]
+                    for match in matchsTournament:
+                        if ((match.white_player_id == whitePlayer_id and match.black_player_id == blackPlayer_id) 
+                           or (match.white_player_id == blackPlayer_id and match.black_player_id == whitePlayer_id)):
+                           if match.white_player_id == whitePlayer_id:
+                               whitePlayer_id = blackPlayer_id
+                               blackPlayer_id = match.white_player_id
+                           break
+                    playersTournamentsMatchID.remove(whitePlayer_id)
+                else:
+                    playersTournamentsMatchID.remove(blackPlayer_id)
                 #whitePlayer = db.GetPlayerByID(whitePlayer_id)
                 #blackPlayer = db.GetPlayerByID(blackPlayer_id)
                 db.AddData(Match(tournament_id=tournamentID, white_player_id=whitePlayer_id, black_player_id=blackPlayer_id, round=round))
 
-            string2 = "First matchs :"
+            if round==1:
+                string2 = "First matchs :\n"
+            else:
+                string2 = "Next matchs :\n"
             labelPlayersFirstMatch = tk.Label(root2, text=string2, justify="left")
             labelPlayersFirstMatch.pack(side="top", padx=(50,10),  anchor="nw")
 
@@ -182,7 +226,9 @@ def startTournament():
                 white_player = db.GetPlayerByID(match.white_player_id)
                 black_player = db.GetPlayerByID(match.black_player_id)
 
-                label = tk.Label(match_frame, text=f"\n{str(n)}) {white_player.firstName} {white_player.lastName} vs {black_player.firstName} {black_player.lastName}", justify="left")
+                string = f"\n{str(n)}) {white_player.firstName} {white_player.lastName} vs {black_player.firstName} {black_player.lastName}"
+                string2 += string
+                label = tk.Label(match_frame, text=string, justify="left")
                 label.grid(row=n, column=0)
 
                 winner_options = [f"{white_player.firstName} {white_player.lastName}", f"{black_player.firstName} {black_player.lastName}", "Draw"]
@@ -196,11 +242,15 @@ def startTournament():
 
             if playerSolo_id:
                 player = db.GetPlayerByID(playerSolo_id)
-                labelPlayerSolo = tk.Label(root2, text=f"\n{str(n)}) No match for {player.firstName} {player.lastName}", justify="left")
+                string = f"\n{str(n)}) No match for {player.firstName} {player.lastName}"
+                string2 += string
+                labelPlayerSolo = tk.Label(root2, text=string, justify="left")
                 labelPlayerSolo.pack()
             
             button_submit = tk.Button(root2, text="Next match", command=lambda: finishRound(winners))
             button_submit.pack(side="bottom")
+
+            te.PostMessage(string2)
 
             def finishRound(winners):
                 for winner in winners:
