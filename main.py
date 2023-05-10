@@ -157,11 +157,12 @@ def startTournament():
             if len(playersTournamentsMatchID)%2 != 0:
                 playerSolo_id = playersTournamentsMatchID[random.randrange(0,len(playersTournamentsMatchID))]
                 playersTournamentsMatchID.remove(playerSolo_id) #sauf si déjà en pause  ##################################3
+            print(len(playersTournamentsMatchID))
 
-            for i in range(0, len(playersTournamentsMatchID)/2):
+            for i in range(0, int(len(playersTournamentsMatchID)/2)):
                 whitePlayer_id = playersTournamentsMatchID[0]
                 playersTournamentsMatchID.remove(whitePlayer_id)    #sauf si déjà joué contre ###################################
-                blackPlayer_id = playersTournamentsMatchID[1]
+                blackPlayer_id = playersTournamentsMatchID[0]
                 playersTournamentsMatchID.remove(blackPlayer_id)
                 #whitePlayer = db.GetPlayerByID(whitePlayer_id)
                 #blackPlayer = db.GetPlayerByID(blackPlayer_id)
