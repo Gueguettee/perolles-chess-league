@@ -95,14 +95,11 @@ def startTournament():
             db.AddPlayerIDToTournament(tournament_id=tournamentID, player_id=player.id)
 
         roundT = 1
-        startFirstRoundButton = tk.Button(root2, text="Start First Round", command=lambda: startRound(roundT))
-        startFirstRoundButton.pack()
         
         def startRound(round):
 
             nonlocal root2
             if round == 1:
-                startFirstRoundButton.destroy()
                 string1 = "Players :\n\n"
             else:
                 root2.destroy()
@@ -247,7 +244,11 @@ def startTournament():
                 labelPlayerSolo = tk.Label(root2, text=string, justify="left")
                 labelPlayerSolo.pack()
             
-            button_submit = tk.Button(root2, text="Next match", command=lambda: finishRound(winners))
+            if round == n_rounds:
+                string = "Final ranking"
+            else:
+                string = "Next match"
+            button_submit = tk.Button(root2, text=string, command=lambda: finishRound(winners))
             button_submit.pack(side="bottom")
 
             te.PostMessage(string2)
@@ -272,6 +273,8 @@ def startTournament():
 
                 round += 1
                 startRound(round=round)
+
+        startRound(roundT)
             
 updateScoreButton = tk.Button(root, text="Mettre à jour le score", command=updateScore)
 updateScoreButton.pack()
