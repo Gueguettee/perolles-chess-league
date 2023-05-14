@@ -65,36 +65,59 @@ score_label.pack()
 score_entry = tk.Entry(root)
 score_entry.pack()
 
-def startTournament():
+def startTournament(tournamentID = None):
     root2 = tk.Toplevel(root)
-    labelNameTournament = tk.Label(root2, text="Nom du tournoi :")
-    labelNameTournament.pack()
-    entryNameTournament = tk.Entry(root2)
-    entryNameTournament.pack()
+    if tournamentID == None:
+        labelNameTournament = tk.Label(root2, text="Nom du tournoi :")
+        labelNameTournament.pack()
+        entryNameTournament = tk.Entry(root2)
+        entryNameTournament.pack()
 
-    labelNRoundTournament = tk.Label(root2, text="\n\nNombre de rounds :")
+        labelNRoundTournament = tk.Label(root2, text="\n\nNombre de rounds :")
+        labelNRoundTournament.pack()
+        entryNRoundTournament = tk.Entry(root2)
+        entryNRoundTournament.bind('<Return>', lambda event: establishmentTournament())
+        entryNRoundTournament.pack()
+    else:
+        labelIdTournament = tk.Label(root2, text="ID du tournoi :")
+        labelIdTournament.pack()
+        entryIdTournament = tk.Entry(root2)
+        entryIdTournament.bind('<Return>', lambda event: establishmentTournament())
+        entryIdTournament.pack()
+
+    """labelNRoundTournament = tk.Label(root2, text="\n\nNombre de rounds :")
     labelNRoundTournament.pack()
     entryNRoundTournament = tk.Entry(root2)
     entryNRoundTournament.bind('<Return>', lambda event: establishmentTournament())
-    entryNRoundTournament.pack()
+    entryNRoundTournament.pack()"""
 
     def establishmentTournament():
-        nameTournament = entryNameTournament.get()
-        n_rounds = int(entryNRoundTournament.get())
-        if n_rounds < 1:
-            n_rounds = N_ROUNDS
-        
+        nonlocal tournamentID
+        if tournamentID == None:
+            nameTournament = entryNameTournament.get()
+            n_rounds = int(entryNRoundTournament.get())
+
+            if n_rounds < 1:
+                n_rounds = N_ROUNDS
+
+            tournament = Tournament(name=nameTournament, nRounds=n_rounds, date=datetime.now())
+            tournamentID = db.AddData(data=tournament)
+            players = db.GetAll(Player) # Tous les players en l'occurence
+            for player in players:
+                db.AddPlayerIDToTournament(tournament_id=tournamentID, player_id=player.id)
+
+            roundT = 1
+
+        else:
+            tournamentID = entryIdTournament.get()
+            tournament = db.GetTournament(id = tournamentID)
+            n_rounds = tournament.nRounds
+            roundT = round(len(db.GetMatchsByTournamentID(tournamentID)) / len(db.GetPlayersTournamentsByTournamentID(tournamentID)))
+            print(roundT)
+
         nonlocal root2
         root2.destroy()
         root2 = tk.Toplevel(root)
-
-        tournament = Tournament(name=nameTournament, date=datetime.now())
-        tournamentID = db.AddData(data=tournament)
-        players = db.GetAll(Player) # Tous les players en l'occurence
-        for player in players:
-            db.AddPlayerIDToTournament(tournament_id=tournamentID, player_id=player.id)
-
-        roundT = 1
         
         def startRound(round):
 
@@ -281,5 +304,9 @@ updateScoreButton.pack()
 
 startTournamentButton = tk.Button(root, text="Lancer un tournoi", command=startTournament)
 startTournamentButton.pack()
+
+
+resumeTournamentButton = tk.Button(root, text="Resume Tournament", command=lambda: startTournament(1))
+resumeTournamentButton.pack()
 
 root.mainloop()

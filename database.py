@@ -33,6 +33,7 @@ class Tournament(Base):
     id = Column(Integer,nullable=False, primary_key=True)
     name = Column(String, nullable=False)
     date = Column(DateTime, nullable=False)
+    nRounds = Column(Integer, nullable=False)
     matchs = relationship("Match", back_populates="tournament")
     players = relationship("Player", secondary="players_tournaments_table", back_populates="tournaments", overlaps="players_ass,tournaments_associations,tournaments_ass")
     players_associations = relationship("PlayersTournaments", back_populates="tournaments_ass", overlaps="players")
@@ -133,6 +134,14 @@ class Database():
             tournament = session.query(Tournament).filter_by(id=tournament_id).first()
             if tournament:
                 return tournament.matchs
+            else:
+                return []
+            
+    def GetTournament(self, id):
+        with self.Session() as session:
+            tournament = session.query(Tournament).filter_by(id=id).first()
+            if tournament:
+                return tournament
             else:
                 return []
             
