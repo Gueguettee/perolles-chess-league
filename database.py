@@ -19,7 +19,7 @@ class PlayersTournaments(Base):
 
 class Player(Base):
     __tablename__ = 'players_table'
-    id = Column(Integer, nullable=False, primary_key=True)
+    id = Column(Integer, nullable=True, primary_key=True)
     firstName = Column(String, nullable=False)
     lastName = Column(String, nullable=False)
     school = school = Column(Enum('HEIA-FR', 'UNI-FR', 'Autre'))
@@ -30,7 +30,7 @@ class Player(Base):
 
 class Tournament(Base):
     __tablename__ = 'tournaments_table'
-    id = Column(Integer,nullable=False, primary_key=True)
+    id = Column(Integer,nullable=True, primary_key=True)
     name = Column(String, nullable=False)
     date = Column(DateTime, nullable=False)
     nRounds = Column(Integer, nullable=False)
@@ -41,9 +41,9 @@ class Tournament(Base):
 class Match(Base):
     __tablename__ = 'matchs_table'
     id = Column(Integer, primary_key=True)
-    white_player_id = Column(Integer, ForeignKey('players_table.id'), nullable=False)
-    black_player_id = Column(Integer, ForeignKey('players_table.id'), nullable=False)
-    tournament_id = Column(Integer, ForeignKey('tournaments_table.id'), nullable=False)
+    white_player_id = Column(Integer, ForeignKey('players_table.id'), nullable=True)
+    black_player_id = Column(Integer, ForeignKey('players_table.id'), nullable=True)
+    tournament_id = Column(Integer, ForeignKey('tournaments_table.id'), nullable=True)
     tournament = relationship("Tournament", back_populates="matchs")
     winner_id = Column(Integer, ForeignKey('players_table.id'), nullable=True)
     winner = relationship("Player", foreign_keys=[winner_id])
@@ -90,7 +90,7 @@ class Database():
             tournament.players.append(player)
             session.commit()
 
-    def  AddWinnerToMatch(self, match_id, winner_id):
+    def AddWinnerToMatch(self, match_id, winner_id):
         with self.Session() as session:
             match = session.query(Match).get(match_id)
             match.winner_id = winner_id

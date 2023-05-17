@@ -65,6 +65,26 @@ score_label.pack()
 score_entry = tk.Entry(root)
 score_entry.pack()
 
+
+allPlayers = db.GetAll(Player)
+inTournamentVar = {player.id: tk.BooleanVar(value=False) for player in allPlayers}
+
+selected_count = tk.IntVar(value=0)
+def selection_callback():
+    n = 0
+    for player in allPlayers:
+        if inTournamentVar[player.id].get():
+            n += 1
+    selected_count.set(n)
+
+for player in allPlayers:
+    playerVar = tk.StringVar()
+    playerVar.set(f"{player.firstName} {player.lastName}")
+    buttonPlayerIn = tk.Checkbutton(root, textvariable = playerVar, variable=inTournamentVar[player.id], command=selection_callback).pack(anchor = tk.W)
+    #buttonPlayerIn.pack()
+
+selected_label = tk.Label(root, text="Nombre actuel : ", textvariable=selected_count).pack(anchor = tk.W)
+
 def startTournament(tournamentID = None):
     root2 = tk.Toplevel(root)
     if tournamentID == None:
@@ -93,6 +113,7 @@ def startTournament(tournamentID = None):
 
     def establishmentTournament():
         nonlocal tournamentID
+        resumeTournament = False
         if tournamentID == None:
             nameTournament = entryNameTournament.get()
             n_rounds = int(entryNRoundTournament.get())
@@ -102,9 +123,11 @@ def startTournament(tournamentID = None):
 
             tournament = Tournament(name=nameTournament, nRounds=n_rounds, date=datetime.now())
             tournamentID = db.AddData(data=tournament)
-            players = db.GetAll(Player) # Tous les players en l'occurence
+
+            players = db.GetAll(Player)
             for player in players:
-                db.AddPlayerIDToTournament(tournament_id=tournamentID, player_id=player.id)
+                if inTournamentVar[player.id].get():
+                    db.AddPlayerIDToTournament(tournament_id=tournamentID, player_id=player.id)
 
             roundT = 1
 
@@ -114,6 +137,7 @@ def startTournament(tournamentID = None):
             n_rounds = tournament.nRounds
             roundT = round(len(db.GetMatchsByTournamentID(tournamentID)) / len(db.GetPlayersTournamentsByTournamentID(tournamentID)))
             print(roundT)
+            resumeTournament = True
 
         nonlocal root2
         root2.destroy()
@@ -193,41 +217,43 @@ def startTournament(tournamentID = None):
             playerSolo_id = None
             if len(playersTournamentsMatchID)%2 != 0:
                 playerSolo_id = playersTournamentsMatchID[random.randrange(0,len(playersTournamentsMatchID))]
-                playersTournamentsMatchID.remove(playerSolo_id) #sauf si déjà en pause  ##################################3
+                playersTournamentsMatchID.remove(playerSolo_id)
 
-            matchsTournament = db.GetMatchsByTournamentID(tournamentID)
-            for i in range(0, int(len(playersTournamentsMatchID)/2)):
-                whitePlayer_id = playersTournamentsMatchID[0]
-                playersTournamentsMatchID.remove(whitePlayer_id)
-                print("w"+str(whitePlayer_id))
-                ok = False
-                for i in range(0, len(playersTournamentsMatchID)):
-                    blackPlayer_id = playersTournamentsMatchID[i]
-                    print("b" + str(blackPlayer_id))
-                    ok = True
-                    for match in matchsTournament:
-                        if((match.white_player_id == whitePlayer_id and match.black_player_id == blackPlayer_id) 
-                           or (match.white_player_id == blackPlayer_id and match.black_player_id == whitePlayer_id)):
-                           ok = False
-                           break
-                    if ok:
-                        break
-                print(ok)
-                if not ok:
-                    blackPlayer_id = playersTournamentsMatchID[0]
-                    for match in matchsTournament:
-                        if ((match.white_player_id == whitePlayer_id and match.black_player_id == blackPlayer_id) 
-                           or (match.white_player_id == blackPlayer_id and match.black_player_id == whitePlayer_id)):
-                           if match.white_player_id == whitePlayer_id:
-                               whitePlayer_id = blackPlayer_id
-                               blackPlayer_id = match.white_player_id
-                           break
+            nonlocal resumeTournament
+            if not resumeTournament:
+                matchsTournament = db.GetMatchsByTournamentID(tournamentID)
+                for i in range(0, int(len(playersTournamentsMatchID)/2)):
+                    whitePlayer_id = playersTournamentsMatchID[0]
                     playersTournamentsMatchID.remove(whitePlayer_id)
-                else:
-                    playersTournamentsMatchID.remove(blackPlayer_id)
-                #whitePlayer = db.GetPlayerByID(whitePlayer_id)
-                #blackPlayer = db.GetPlayerByID(blackPlayer_id)
-                db.AddData(Match(tournament_id=tournamentID, white_player_id=whitePlayer_id, black_player_id=blackPlayer_id, round=round))
+                    print("w"+str(whitePlayer_id))
+                    ok = False
+                    for i in range(0, len(playersTournamentsMatchID)):
+                        blackPlayer_id = playersTournamentsMatchID[i]
+                        print("b" + str(blackPlayer_id))
+                        ok = True
+                        for match in matchsTournament:
+                            if((match.white_player_id == whitePlayer_id and match.black_player_id == blackPlayer_id) 
+                            or (match.white_player_id == blackPlayer_id and match.black_player_id == whitePlayer_id)):
+                                ok = False
+                                break
+                        if ok:
+                            break
+                    print(ok)
+                    if not ok:
+                        blackPlayer_id = playersTournamentsMatchID[0]
+                        for match in matchsTournament:
+                            if ((match.white_player_id == whitePlayer_id and match.black_player_id == blackPlayer_id) 
+                            or (match.white_player_id == blackPlayer_id and match.black_player_id == whitePlayer_id)):
+                                if match.white_player_id == whitePlayer_id:
+                                    whitePlayer_id = blackPlayer_id
+                                    blackPlayer_id = match.white_player_id
+                                break
+                        playersTournamentsMatchID.remove(whitePlayer_id)
+                    else:
+                        playersTournamentsMatchID.remove(blackPlayer_id)
+                    #whitePlayer = db.GetPlayerByID(whitePlayer_id)
+                    #blackPlayer = db.GetPlayerByID(blackPlayer_id)
+                    db.AddData(Match(tournament_id=tournamentID, white_player_id=whitePlayer_id, black_player_id=blackPlayer_id, round=round))
 
             if round==1:
                 string2 = "First matchs :\n"
