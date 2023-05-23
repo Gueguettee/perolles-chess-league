@@ -331,7 +331,6 @@ updateScoreButton.pack()
 startTournamentButton = tk.Button(root, text="Lancer un tournoi", command=startTournament)
 startTournamentButton.pack()
 
-
 resumeTournamentButton = tk.Button(root, text="Resume Tournament", command=lambda: startTournament(1))
 resumeTournamentButton.pack()
 
