@@ -1,5 +1,5 @@
 import csv
-from database import Database, Match, Player, PlayersTournaments, Tournament
+from database import Database, Player
 
 db = Database()
 
