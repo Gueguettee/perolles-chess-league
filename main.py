@@ -1,14 +1,19 @@
 import random
 import tkinter as tk
+from tkinter.messagebox import askyesno
 from datetime import datetime
 from tkinter import ttk
 from telegramAPI import Telegram
 import math
 import random
+import time
 
 from database import Database, Match, Player, PlayersTournaments, Tournament
 
 N_ROUNDS = 3
+
+TIME_BETWEEN_ROUND = 15 #* 60
+
 TOKEN_TOURNAMENT_TELEGRAM = '6189666655:AAGyjZ7dkgqQtobYR3j3AHlIYPwNdeDusR8'
 CHAT_ID_TELEGRAM = '1646128337'
 
@@ -79,6 +84,8 @@ def startTournament(tournamentID = None):
             if n_rounds < 1:
                 n_rounds = N_ROUNDS
 
+            te.PostMessage(f"Bienvenue au premier tournoi d'échecs de Pérolles !")
+
             tournament = Tournament(name=nameTournament, nRounds=n_rounds, date=datetime.now())
             tournamentID = db.AddData(data=tournament)
 
@@ -103,6 +110,38 @@ def startTournament(tournamentID = None):
         def startRound(round):
 
             print(round)
+
+            def update_timer():
+                nonlocal paused
+                nonlocal lastIdMessage
+                if not paused:
+                    elapsedTime = update_timer.elapsed_time
+                    timeRemaining = TIME_BETWEEN_ROUND - elapsedTime
+                    minutes = timeRemaining // 60
+                    seconds = timeRemaining % 60
+                    string = f"Temps restant avant le début de la manche :\n{minutes:02d}:{seconds:02d}"
+                    timer_label.config(text=string)
+                    if timeRemaining <= 5:
+                        lastIdMessage = te.EditMessageId(string, lastIdMessage)
+                        if timeRemaining > 0:
+                            string = f"{seconds}"
+                            after_id = root2.after(1000, update_timer)  # Update every second (1000 milliseconds)
+                        else:
+                            string = "Lancez les clocks et bon match !"
+                        te.PostMessage(string)
+                    else:
+                        if update_timer.elapsed_time == 0:
+                            lastIdMessage = te.PostMessage(string)
+                        else:
+                            lastIdMessage = te.EditMessageId(string, lastIdMessage)
+                        after_id = root2.after(1000, update_timer)  # Update every second (1000 milliseconds)
+                    update_timer.elapsed_time = elapsedTime + 1
+                else:
+                    after_id = root2.after(1000, update_timer)  # Update every second (1000 milliseconds)
+            
+            update_timer.elapsed_time = 0
+            paused = False
+            lastIdMessage = None
 
             nonlocal root2
             if round == 1:
@@ -245,7 +284,7 @@ def startTournament(tournamentID = None):
                 string2 = "Premiers matchs\n"
             else:
                 string2 = "Prochains matchs\n"
-            string2 += ("Le numéro et le numéro de la table,\nLe premier joueur prend les blancs,\nLe second prend les noirs :\n")
+            string2 += ("Le numéro correspond à la table,\nLe premier joueur prend les blancs,\nLe second prend les noirs :\n")
             labelPlayersFirstMatch = tk.Label(root2, text=string2, justify="left")
             labelPlayersFirstMatch.pack(side="top", padx=(50,10),  anchor="nw")
 
@@ -279,15 +318,36 @@ def startTournament(tournamentID = None):
                 string2 += string
                 labelPlayerSolo = tk.Label(root2, text=string, justify="left")
                 labelPlayerSolo.pack()
+
+            def show_confirmation():
+                confirm = askyesno("Confirmation", "Voulez-vous vraiment afficher les prochains matchs ?")
+                if confirm:
+                    finishRound(winners)
             
             if round == n_rounds:
                 string = "Classement Final"
             else:
                 string = "Prochains matchs"
-            button_submit = tk.Button(root2, text=string, command=lambda: finishRound(winners))
+            button_submit = tk.Button(root2, text=string, command=show_confirmation)
             button_submit.pack(side="bottom")
 
             te.PostMessage(string2)
+
+            def toggle_pause():
+                nonlocal paused
+                if paused:
+                    paused = False
+                else:
+                    paused = True
+                pause_button.config(text="Relancer le timer" if paused else "Stopper le timer")
+
+            pause_button = tk.Button(root2, text="Stopper le temps", command=toggle_pause)
+            pause_button.pack(side="bottom")
+
+            timer_label = tk.Label(root2, text="")
+            timer_label.pack(side="bottom")
+
+            update_timer()
 
             def finishRound(winners):
                 for winner in winners:
