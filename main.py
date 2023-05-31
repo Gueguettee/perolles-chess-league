@@ -35,10 +35,11 @@ N_MAX_COLUMN = math.floor(L/150)
 
 def addPlayer():
     player = playerEntry.get().strip()
+    player2 = playerEntry2.get().strip()
     if player:
-        db.AddData(Player(firstName=player, lastName=player, school='HEIA-FR', elo=100))
-        menu = playerSelectDrowdown['menu']
-        menu.add_command(label=player, command=tk._setit(varPlayerSelect, player))
+        db.AddData(Player(firstName=player2, lastName=player, school='HEIA-FR', elo=100))
+        #menu = playerSelectDrowdown['menu']
+        #menu.add_command(label=player, command=tk._setit(varPlayerSelect, player))
 
 def updateScore():
     player = varPlayerSelect.get()
@@ -121,19 +122,30 @@ def startTournament(tournamentID = None):
                     seconds = timeRemaining % 60
                     string = f"Temps restant avant le début de la manche :\n{minutes:02d}:{seconds:02d}"
                     timer_label.config(text=string)
-                    if timeRemaining == 0:
-                        lastIdMessage = te.EditMessageId(string, lastIdMessage)
-                        string = "*Lancez les clocks et bon match !*"
-                        te.PostMessage(string)
-                    else:
-                        if update_timer.elapsed_time == 0:
-                            lastIdMessage = te.PostMessage(string)
+                    string = f"Temps restant avant le début de la manche :\n{minutes} minutes"
+                    if seconds == 0:
+                        if timeRemaining == 0:
+                            try:
+                                lastIdMessage = te.EditMessageId(string, lastIdMessage)
+                            except:
+                                lastIdMessage = te.PostMessage(string)
+                            string = "*Lancez les clocks et bon match !*"
+                            te.PostMessage(string)
                         else:
-                            lastIdMessage = te.EditMessageId(string, lastIdMessage)
-                        after_id = root2.after(800, update_timer)  # Update every second (1000 milliseconds)
+                            if update_timer.elapsed_time == 0:
+                                lastIdMessage = te.PostMessage(string)
+                            else:
+                                try:
+                                    lastIdMessage = te.EditMessageId(string, lastIdMessage)
+                                except:
+                                    print(string)
+                                    lastIdMessage = te.PostMessage(string)
+                            after_id = root2.after(800, update_timer)  # Update every second (1000 milliseconds)
+                    else:
+                        after_id = root2.after(1000, update_timer)  # Update every second (1000 milliseconds)
                     update_timer.elapsed_time = elapsedTime + 1
                 else:
-                    after_id = root2.after(800, update_timer)  # Update every second (1000 milliseconds)
+                    after_id = root2.after(1000, update_timer)  # Update every second (1000 milliseconds)
             
             update_timer.elapsed_time = 0
             paused = False
@@ -385,7 +397,7 @@ column = 0
 elementsColumn = {c: [] for c in range(0, N_MAX_COLUMN)}
 
 varPlayerSelect = tk.StringVar()
-varPlayerSelect.set("Sélectionner un player")
+#varPlayerSelect.set("Sélectionner un player")
 
 labelPlayer = tk.Label(root, text="Nom du joueur :")
 elementsColumn[column].append(labelPlayer)
@@ -393,16 +405,22 @@ elementsColumn[column].append(labelPlayer)
 playerEntry = tk.Entry(root)
 elementsColumn[column].append(playerEntry)
 
+labelPlayer = tk.Label(root, text="Prénom du joueur :")
+elementsColumn[column].append(labelPlayer)
+
+playerEntry2 = tk.Entry(root)
+elementsColumn[column].append(playerEntry2)
+
 addPlayerButton = tk.Button(root, text="Ajouter un joueur", command=addPlayer)
 elementsColumn[column].append(addPlayerButton)
 
 players = [f"{j.firstName} {j.lastName}" for j in db.ReadAllData(Player)]
 if players:
     playerSelectDrowdown = tk.OptionMenu(root, varPlayerSelect, *players, command=varPlayerSelect.set)
-    elementsColumn[column].append(playerSelectDrowdown)
+    #elementsColumn[column].append(playerSelectDrowdown)
             
 updateScoreButton = tk.Button(root, text="Mettre à jour le score", command=updateScore)
-elementsColumn[column].append(updateScoreButton)
+#elementsColumn[column].append(updateScoreButton)
 
 startTournamentButton = tk.Button(root, text="Lancer un tournoi", command=startTournament)
 elementsColumn[column].append(startTournamentButton)
@@ -411,10 +429,10 @@ resumeTournamentButton = tk.Button(root, text="Reprendre un tournoi", command=la
 elementsColumn[column].append(resumeTournamentButton)
 
 score_label = tk.Label(root, text="Score à ajouter :")
-elementsColumn[column].append(score_label)
+#elementsColumn[column].append(score_label)
 
 score_entry = tk.Entry(root)
-elementsColumn[column].append(score_entry)
+#elementsColumn[column].append(score_entry)
 
 column += 1
 

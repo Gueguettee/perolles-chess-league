@@ -47,6 +47,7 @@ class Telegram():
         api_url = f'https://api.telegram.org/bot{self.token}/editMessageText'
         response = requests_post(api_url, json={'chat_id': self.chat_id, 'message_id': id, 'text': new_message})
         if response.status_code != 200:
+            print(response)
             print('Failed to edit message')
             return []
         else:
