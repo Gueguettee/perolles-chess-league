@@ -6,7 +6,6 @@ from tkinter import ttk
 from telegramAPI import Telegram
 import math
 import random
-import time
 
 from database import Database, Match, Player, PlayersTournaments, Tournament
 
@@ -15,8 +14,8 @@ N_ROUNDS = 3
 TIME_BETWEEN_ROUND = 5 * 60
 
 TOKEN_TOURNAMENT_TELEGRAM = '6189666655:AAGyjZ7dkgqQtobYR3j3AHlIYPwNdeDusR8'
-#CHAT_ID_TELEGRAM = '-1001734923737'
-CHAT_ID_TELEGRAM = '1646128337'
+CHAT_ID_TELEGRAM = '-1001734923737'
+#CHAT_ID_TELEGRAM = '1646128337'
 
 te = Telegram(
     token = TOKEN_TOURNAMENT_TELEGRAM,
@@ -122,25 +121,19 @@ def startTournament(tournamentID = None):
                     seconds = timeRemaining % 60
                     string = f"Temps restant avant le début de la manche :\n{minutes:02d}:{seconds:02d}"
                     timer_label.config(text=string)
-                    if timeRemaining <= 5:
-                        if timeRemaining > 0:
-                            after_id = root2.after(1000, update_timer)  # Update every second (1000 milliseconds)
-                            lastIdMessage = te.EditMessageId(string, lastIdMessage)
-                            string = f"{seconds}"
-                            #te.PostMessage(string)
-                        else:
-                            lastIdMessage = te.EditMessageId(string, lastIdMessage)
-                            string = "*Lancez les clocks et bon match !*"
-                            te.PostMessage(string)
+                    if timeRemaining == 0:
+                        lastIdMessage = te.EditMessageId(string, lastIdMessage)
+                        string = "*Lancez les clocks et bon match !*"
+                        te.PostMessage(string)
                     else:
-                        after_id = root2.after(1000, update_timer)  # Update every second (1000 milliseconds)
                         if update_timer.elapsed_time == 0:
                             lastIdMessage = te.PostMessage(string)
                         else:
                             lastIdMessage = te.EditMessageId(string, lastIdMessage)
+                        after_id = root2.after(800, update_timer)  # Update every second (1000 milliseconds)
                     update_timer.elapsed_time = elapsedTime + 1
                 else:
-                    after_id = root2.after(1000, update_timer)  # Update every second (1000 milliseconds)
+                    after_id = root2.after(800, update_timer)  # Update every second (1000 milliseconds)
             
             update_timer.elapsed_time = 0
             paused = False
