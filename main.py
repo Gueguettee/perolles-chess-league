@@ -36,7 +36,7 @@ N_MAX_COLUMN = math.floor(L/150)
 def addPlayer():
     player = playerEntry.get().strip()
     player2 = playerEntry2.get().strip()
-    if player:
+    if player and player2:
         db.AddData(Player(firstName=player2, lastName=player, school='HEIA-FR', elo=100))
         #menu = playerSelectDrowdown['menu']
         #menu.add_command(label=player, command=tk._setit(varPlayerSelect, player))
