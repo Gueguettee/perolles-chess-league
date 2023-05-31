@@ -9,7 +9,7 @@ class Telegram():
 
     def PostMessage(self, message):
         api_url = f'https://api.telegram.org/bot{self.token}/sendMessage'
-        response = requests_post(api_url, json={'chat_id': self.chat_id, 'text': message})
+        response = requests_post(api_url, json={'chat_id': self.chat_id, 'text': message, 'parse_mode': 'markdown'})
         if response.status_code == 200:
             data = response.json()
             self.last_message_id = data['result']['message_id']
@@ -55,7 +55,7 @@ class Telegram():
     
 if __name__ == "__main__":
     te = Telegram(
-    token = '6109483003:AAEyfQm3g5-h3gFtq_BAVtExZSoiWXSS3tM',
+    token = '6189666655:AAGyjZ7dkgqQtobYR3j3AHlIYPwNdeDusR8',
     chat_id = '1646128337'
     )
     te.PostMessage("Hello world !")

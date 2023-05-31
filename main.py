@@ -12,9 +12,10 @@ from database import Database, Match, Player, PlayersTournaments, Tournament
 
 N_ROUNDS = 3
 
-TIME_BETWEEN_ROUND = 15 #* 60
+TIME_BETWEEN_ROUND = 5 * 60
 
 TOKEN_TOURNAMENT_TELEGRAM = '6189666655:AAGyjZ7dkgqQtobYR3j3AHlIYPwNdeDusR8'
+#CHAT_ID_TELEGRAM = '-1001734923737'
 CHAT_ID_TELEGRAM = '1646128337'
 
 te = Telegram(
@@ -84,7 +85,7 @@ def startTournament(tournamentID = None):
             if n_rounds < 1:
                 n_rounds = N_ROUNDS
 
-            te.PostMessage(f"Bienvenue au premier tournoi d'échecs de Pérolles !")
+            te.PostMessage(f"*Bienvenue au premier tournoi d'échecs de Pérolles !*")
 
             tournament = Tournament(name=nameTournament, nRounds=n_rounds, date=datetime.now())
             tournamentID = db.AddData(data=tournament)
@@ -122,19 +123,21 @@ def startTournament(tournamentID = None):
                     string = f"Temps restant avant le début de la manche :\n{minutes:02d}:{seconds:02d}"
                     timer_label.config(text=string)
                     if timeRemaining <= 5:
-                        lastIdMessage = te.EditMessageId(string, lastIdMessage)
                         if timeRemaining > 0:
-                            string = f"{seconds}"
                             after_id = root2.after(1000, update_timer)  # Update every second (1000 milliseconds)
+                            lastIdMessage = te.EditMessageId(string, lastIdMessage)
+                            string = f"{seconds}"
+                            #te.PostMessage(string)
                         else:
-                            string = "Lancez les clocks et bon match !"
-                        te.PostMessage(string)
+                            lastIdMessage = te.EditMessageId(string, lastIdMessage)
+                            string = "*Lancez les clocks et bon match !*"
+                            te.PostMessage(string)
                     else:
+                        after_id = root2.after(1000, update_timer)  # Update every second (1000 milliseconds)
                         if update_timer.elapsed_time == 0:
                             lastIdMessage = te.PostMessage(string)
                         else:
                             lastIdMessage = te.EditMessageId(string, lastIdMessage)
-                        after_id = root2.after(1000, update_timer)  # Update every second (1000 milliseconds)
                     update_timer.elapsed_time = elapsedTime + 1
                 else:
                     after_id = root2.after(1000, update_timer)  # Update every second (1000 milliseconds)
@@ -145,15 +148,15 @@ def startTournament(tournamentID = None):
 
             nonlocal root2
             if round == 1:
-                string1 = "Joueurs :\n\n"
+                string1 = "*Joueurs :*\n\n"
             else:
                 root2.destroy()
                 root2 = tk.Toplevel(root)
                 if round <= n_rounds:
-                    string1 = "Classement actuel :\n\n"
+                    string1 = "*Classement actuel* :\n\n"
                 else:
                     # Finish Tournament
-                    string1 = "Classement Final :\n\n"
+                    string1 = "*Classement final* :\n\n"
 
             playersTournament = db.GetPlayersTournamentsByTournamentID(tournamentID)
             n = 1
@@ -211,6 +214,7 @@ def startTournament(tournamentID = None):
             labelPlayersTournament.pack(side="left", padx=(10,50),  anchor="nw")
 
             if round > n_rounds:
+                te.PostMessage("*Merci à tous pour votre participation !*\nOn vous donne rendez-vous pour le prochain tournoi qui se déroulera probablement cet automne !")
                 return 0
 
             playerSolo_id = None
@@ -281,12 +285,18 @@ def startTournament(tournamentID = None):
                     playerSolo_id = playersTournamentsMatchID[0]
 
             if round==1:
-                string2 = "Premiers matchs\n"
+                string2 = "*Premiers matchs*\n"
             else:
-                string2 = "Prochains matchs\n"
+                string2 = "*Prochains matchs*\n"
             string2 += ("Le numéro correspond à la table,\nLe premier joueur prend les blancs,\nLe second prend les noirs :\n")
             labelPlayersFirstMatch = tk.Label(root2, text=string2, justify="left")
             labelPlayersFirstMatch.pack(side="top", padx=(50,10),  anchor="nw")
+
+            """def change_option_color(event, dropdown, var):
+                if var.get() == "None":
+                    dropdown["style"] = "Red.TCombobox"
+                else:
+                    dropdown["style"] = "Black.TCombobox" """
 
             n = 1
             winners = []
@@ -307,6 +317,8 @@ def startTournament(tournamentID = None):
                 winner_var = tk.StringVar(value="None")
                 winner_dropdown = ttk.Combobox(match_frame, textvariable=winner_var, values=winner_options)
                 winner_dropdown.grid(row=n, column=1)
+                #winner_dropdown.bind("<<ComboboxSelected>>", lambda event:change_option_color(event, winner_dropdown, winner_var))
+                #change_option_color(None, winner_dropdown, winner_var)
 
                 winners.append([match.id, winner_var, winner_options])
 
@@ -320,12 +332,16 @@ def startTournament(tournamentID = None):
                 labelPlayerSolo.pack()
 
             def show_confirmation():
-                confirm = askyesno("Confirmation", "Voulez-vous vraiment afficher les prochains matchs ?")
+                if round == n_rounds:
+                    string = "le classement final"
+                else:
+                    string = "les prochains matchs"
+                confirm = askyesno("Confirmation", f"Voulez-vous vraiment afficher {string} ?")
                 if confirm:
                     finishRound(winners)
             
             if round == n_rounds:
-                string = "Classement Final"
+                string = "Classement final"
             else:
                 string = "Prochains matchs"
             button_submit = tk.Button(root2, text=string, command=show_confirmation)
