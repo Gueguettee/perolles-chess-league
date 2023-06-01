@@ -163,6 +163,9 @@ def startTournament(tournamentID = None):
                     # Finish Tournament
                     string1 = "*Classement final* :\n\n"
 
+            labelPlayersTournament = tk.Label(root2, text=string1, justify="left")
+            labelPlayersTournament.grid(sticky = 'W',column=0, row=0)
+
             playersTournament = db.GetPlayersTournamentsByTournamentID(tournamentID)
             n = 1
             playersTournamentsMatchID = []
@@ -192,7 +195,10 @@ def startTournament(tournamentID = None):
                                 n_sous += 1
                             else:
                                 break
-                    string1 += f"{n-n_sous}) {player.firstName} {player.lastName} : {table_classement[i][1]}\n"
+                    ministring = f"{n-n_sous}) {player.firstName} {player.lastName} : {table_classement[i][1]}"
+                    label = tk.Label(root2, text=ministring, justify='left', anchor='w')
+                    label.grid(sticky = 'W',column=0, row=n)
+                    string1 += ministring + '\n'
                     n += 1
             else:
                 for playerTournament in playersTournament:
@@ -210,13 +216,13 @@ def startTournament(tournamentID = None):
                 for i in range(0, len(table_classement)):
                     player = db.GetPlayerByID(table_classement[i][0])
                     playersTournamentsMatchID.append(player.id)
-                    string1 += f"{n}) {player.firstName} {player.lastName} : {0}\n"
+                    ministring = f"{n}) {player.firstName} {player.lastName} : {0}"
+                    label = tk.Label(root2, text=ministring, justify="left", anchor='w')
+                    label.grid(sticky = 'W', column=0, row=n)
+                    string1 += ministring + '\n'
                     n += 1
 
             te.PostMessage(string1)
-
-            labelPlayersTournament = tk.Label(root2, text=string1, justify="left")
-            labelPlayersTournament.pack(side="left", padx=(10,50),  anchor="nw")
 
             if round > n_rounds:
                 te.PostMessage("*Merci à tous pour votre participation !*\nOn vous donne rendez-vous pour le prochain tournoi qui se déroulera probablement cet automne !")
@@ -289,13 +295,16 @@ def startTournament(tournamentID = None):
                         playersTournamentsMatchID.remove(match.black_player_id)
                     playerSolo_id = playersTournamentsMatchID[0]
 
+            label = tk.Label(root2, text="°°°°°°°°", justify="left", anchor='w')
+            label.grid(sticky = 'W',column=1, row=0)
+
             if round==1:
                 string2 = "*Premiers matchs*\n"
             else:
                 string2 = "*Prochains matchs*\n"
             string2 += ("Le numéro correspond à la table,\nLe premier joueur prend les blancs,\nLe second prend les noirs :\n")
-            labelPlayersFirstMatch = tk.Label(root2, text=string2, justify="left")
-            labelPlayersFirstMatch.pack(side="top", padx=(50,10),  anchor="nw")
+            labelPlayersFirstMatch = tk.Label(root2, text=string2, justify="left", anchor='w')
+            labelPlayersFirstMatch.grid(sticky = 'W',column=2, row=0)
 
             """def change_option_color(event, dropdown, var):
                 if var.get() == "None":
@@ -308,20 +317,20 @@ def startTournament(tournamentID = None):
             matchsRound = db.GetMatchsByRound(tournamentID, round)
             for match in matchsRound:
                 match_frame = tk.Frame(root2)
-                match_frame.pack(side="top", padx=(50,10), anchor="nw")
+                match_frame.grid(sticky = 'W',column=2, row=n)
 
                 white_player = db.GetPlayerByID(match.white_player_id)
                 black_player = db.GetPlayerByID(match.black_player_id)
 
-                string = f"\n{str(n)}) {white_player.firstName} {white_player.lastName} vs {black_player.firstName} {black_player.lastName}"
-                string2 += string
-                label = tk.Label(match_frame, text=string, justify="left")
-                label.grid(row=n, column=0)
+                string = f"{str(n)}) {white_player.firstName} {white_player.lastName} vs {black_player.firstName} {black_player.lastName}"
+                string2 += '\n' + string
+                label = tk.Label(match_frame, text=string, justify="left", anchor='w')
+                label.grid(sticky = 'W', row=n, column=2)
 
                 winner_options = [f"{white_player.firstName} {white_player.lastName}", f"{black_player.firstName} {black_player.lastName}", "Draw"]
                 winner_var = tk.StringVar(value="None")
                 winner_dropdown = ttk.Combobox(match_frame, textvariable=winner_var, values=winner_options)
-                winner_dropdown.grid(row=n, column=1)
+                winner_dropdown.grid(sticky = 'W',row=n, column=3)
                 #winner_dropdown.bind("<<ComboboxSelected>>", lambda event:change_option_color(event, winner_dropdown, winner_var))
                 #change_option_color(None, winner_dropdown, winner_var)
 
@@ -331,10 +340,10 @@ def startTournament(tournamentID = None):
 
             if playerSolo_id:
                 player = db.GetPlayerByID(playerSolo_id)
-                string = f"\n{str(n)}) Pas de match pour {player.firstName} {player.lastName}"
-                string2 += string
-                labelPlayerSolo = tk.Label(root2, text=string, justify="left")
-                labelPlayerSolo.pack()
+                string = f"{str(n)}) Pas de match pour {player.firstName} {player.lastName}"
+                string2 += '\n' + string
+                labelPlayerSolo = tk.Label(root2, text=string, justify="left", anchor='w')
+                labelPlayerSolo.grid(sticky = 'W', row=n, column=2)
 
             def show_confirmation():
                 if round == n_rounds:
@@ -344,13 +353,16 @@ def startTournament(tournamentID = None):
                 confirm = askyesno("Confirmation", f"Voulez-vous vraiment afficher {string} ?")
                 if confirm:
                     finishRound(winners)
+
+            label = tk.Label(root2, text="°°°°°°°°°", justify="left", anchor='w')
+            label.grid(sticky = 'W',column=3, row=0)
             
             if round == n_rounds:
                 string = "Classement final"
             else:
                 string = "Prochains matchs"
             button_submit = tk.Button(root2, text=string, command=show_confirmation)
-            button_submit.pack(side="bottom")
+            button_submit.grid(column=4, row=0)
 
             te.PostMessage(string2)
 
@@ -363,10 +375,10 @@ def startTournament(tournamentID = None):
                 pause_button.config(text="Relancer le timer" if paused else "Stopper le timer")
 
             pause_button = tk.Button(root2, text="Stopper le temps", command=toggle_pause)
-            pause_button.pack(side="bottom")
+            pause_button.grid(column=4, row=1)
 
             timer_label = tk.Label(root2, text="")
-            timer_label.pack(side="bottom")
+            timer_label.grid(column=4, row=2)
 
             update_timer()
 
